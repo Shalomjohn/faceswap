@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 # Copyright (c) 2015 Matthew Earl
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,28 +18,6 @@
 #     OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 #     USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-"""
-This is the code behind the Switching Eds blog post:
-
-    http://matthewearl.github.io/2015/07/28/switching-eds-with-python/
-
-See the above for an explanation of the code below.
-
-To run the script you'll need to install dlib (http://dlib.net) including its
-Python bindings, and OpenCV. You'll also need to obtain the trained model from
-sourceforge:
-
-    http://sourceforge.net/projects/dclib/files/dlib/v18.10/shape_predictor_68_face_landmarks.dat.bz2
-
-Unzip with `bunzip2` and change `PREDICTOR_PATH` to refer to this file. The
-script is run like so:
-
-    ./faceswap.py <head image> <face image>
-
-If successful, a file `output.jpg` will be produced with the facial features
-from `<head image>` replaced with the facial features from `<face image>`.
-
-"""
 
 import cv2
 import dlib
@@ -49,7 +25,7 @@ import numpy
 
 import sys
 
-PREDICTOR_PATH = "/home/matt/dlib-18.16/shape_predictor_68_face_landmarks.dat"
+PREDICTOR_PATH = "shape_predictor_68_face_landmarks.dat"
 SCALE_FACTOR = 1 
 FEATHER_AMOUNT = 11
 
@@ -199,21 +175,54 @@ def correct_colours(im1, im2, landmarks1):
     return (im2.astype(numpy.float64) * im1_blur.astype(numpy.float64) /
                                                 im2_blur.astype(numpy.float64))
 
-im1, landmarks1 = read_im_and_landmarks(sys.argv[1])
-im2, landmarks2 = read_im_and_landmarks(sys.argv[2])
 
-M = transformation_from_points(landmarks1[ALIGN_POINTS],
-                               landmarks2[ALIGN_POINTS])
+im00 = cv2.imread(sys.argv[1])
+first = cv2.imread(sys.argv[2])
+second = cv2.imread(sys.argv[3])
 
-mask = get_face_mask(im2, landmarks2)
-warped_mask = warp_im(mask, M, im1.shape)
-combined_mask = numpy.max([get_face_mask(im1, landmarks1), warped_mask],
-                          axis=0)
+rects0 = detector(im00, 1)
+rects1 = detector(first, 1)
+rects2 = detector(second, 1)
 
-warped_im2 = warp_im(im2, M, im1.shape)
-warped_corrected_im2 = correct_colours(im1, warped_im2, landmarks1)
+for i in range(2):
+    if i == 0:
+        print("i is zero")
+        if rects0[0].left() < rects0[1].left():
+            im01, landmarks01 = (im00, numpy.matrix([[p.x, p.y] for p in predictor(im00, rects0[0]).parts()])) # first detected face
+            im02, landmarks02 = (im00, numpy.matrix([[p.x, p.y] for p in predictor(im00, rects0[1]).parts()])) # second detected face
+            im11, landmarks11 = (first, numpy.matrix([[p.x, p.y] for p in predictor(first, rects1[0]).parts()])) # first detected face
+        else:
+            im01, landmarks01 = (im00, numpy.matrix([[p.x, p.y] for p in predictor(im00, rects0[1]).parts()])) # first detected face
+            im02, landmarks02 = (im00, numpy.matrix([[p.x, p.y] for p in predictor(im00, rects0[0]).parts()])) # second detected face
+            im11, landmarks11 = (first, numpy.matrix([[p.x, p.y] for p in predictor(first, rects1[0]).parts()])) # first detected face
+    else:
+        im00 = cv2.imread('output.jpg')
+        rects0 = detector(im00, 1)
+        if rects0[0].left() < rects0[1].left():
+            im01, landmarks01 = (im00, numpy.matrix([[p.x, p.y] for p in predictor(im00, rects0[1]).parts()])) # first detected face
+            im02, landmarks02 = (im00, numpy.matrix([[p.x, p.y] for p in predictor(im00, rects0[0]).parts()])) # second detected face
+            im11, landmarks11 = (second, numpy.matrix([[p.x, p.y] for p in predictor(second, rects2[0]).parts()])) # first detected face
+        else:
+            im01, landmarks01 = (im00, numpy.matrix([[p.x, p.y] for p in predictor(im00, rects0[0]).parts()])) # first detected face
+            im02, landmarks02 = (im00, numpy.matrix([[p.x, p.y] for p in predictor(im00, rects0[1]).parts()])) # second detected face
+            im11, landmarks11 = (second, numpy.matrix([[p.x, p.y] for p in predictor(second, rects2[0]).parts()])) # first detected face
 
-output_im = im1 * (1.0 - combined_mask) + warped_corrected_im2 * combined_mask
+    M = transformation_from_points(landmarks01[ALIGN_POINTS],
+                    landmarks11[ALIGN_POINTS])
 
-cv2.imwrite('output.jpg', output_im)
+    # build the mask of the second image
+    mask = get_face_mask(im11, landmarks11)
+    # build the mask of the first image to be copied
+    warped_mask = warp_im(mask, M, im01.shape)
+    combined_mask = numpy.max([get_face_mask(im01, landmarks01), warped_mask],
+                            axis=0)
+    # and make the mask of the second image to allow the first over top
+    warped_im2 = warp_im(im11, M, im01.shape)
+    warped_corrected_im2 = correct_colours(im01, warped_im2, landmarks01)
+
+    # blend the two images
+    output_im = im01 * (1.0 - combined_mask) + warped_corrected_im2 * combined_mask
+
+    cv2.imwrite("output.jpg", output_im)
+
 
