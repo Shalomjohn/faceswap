@@ -1,6 +1,6 @@
-This is the code behind the [Switching Eds blog post](http://matthewearl.github.io/2015/07/28/switching-eds-with-python/).
+This adds a new functionality to the code behind the [Switching Eds blog post](http://matthewearl.github.io/2015/07/28/switching-eds-with-python/).
 
-See the link for an explanation of the code.
+While the post in the link shows the swapping of one face with another, this code makes you swap two faces.
 
 To run the script you'll need to install dlib (http://dlib.net) including its
 Python bindings, and OpenCV. You'll also need to obtain the trained model [from
