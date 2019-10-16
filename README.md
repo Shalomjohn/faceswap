@@ -12,5 +12,5 @@ script is run like so:
     ./faceswap.py <head image> <first face image> <second face image>
 
 If successful, a file `output.jpg` will be produced with the facial features
-from `<head image>` replaced with the facial features from `<face image>`.
+from `<head image>` replaced with the facial features from both `<first face image>` and `<second face image>`.
 
