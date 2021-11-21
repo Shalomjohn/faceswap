@@ -6,8 +6,9 @@ To run the script you'll need to install dlib (http://dlib.net) including its
 Python bindings, and OpenCV. You'll also need to obtain the trained model [from
 sourceforge](http://sourceforge.net/projects/dclib/files/dlib/v18.10/shape_predictor_68_face_landmarks.dat.bz2).
 
-Unzip with `bunzip2` and change `PREDICTOR_PATH` to refer to this file. The
-script is run like so:
+Unzip with `bunzip2` and change `PREDICTOR_PATH` to refer to this file.
+
+The script is run like so:
 
     ./faceswap.py <head image> <first face image> <second face image>
 
